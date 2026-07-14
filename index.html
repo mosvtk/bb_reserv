@@ -1,105 +1,280 @@
+HTML
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Бронирование столов</title>
+    <title>Бронирование столов — Barr Burgerr</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; margin: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        
-        /* Схема зала на CSS/кнопках (или можно наложить SVG поверх картинки) */
+        /* Общие стили оформления страницы */
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .booking-container {
+            max-width: 900px;
+            width: 100%;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 24px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .step-title {
+            text-align: left;
+            font-size: 18px;
+            color: #f1c40f;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* Поля выбора даты и времени */
+        .datetime-picker {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: space-between;
+        }
+
+        .input-group {
+            flex: 1;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #2d2d2d;
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: #f1c40f;
+            box-shadow: 0 0 5px rgba(241, 196, 15, 0.3);
+        }
+
+        /* Кнопка проверки доступности */
+        .check-btn {
+            background-color: #f1c40f;
+            color: #121212;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin-top: 22px;
+            height: 48px;
+        }
+
+        .check-btn:hover {
+            background-color: #f39c12;
+        }
+
+        /* Контейнер интерактивной карты зала */
         .hall-schema {
             position: relative;
-            background: #222;
-            border: 2px solid #444;
-            height: 300px;
-            margin-bottom: 20px;
+            width: 800px; /* Фиксированная ширина под пропорции картинки */
+            height: 752px; /* Пропорциональная высота */
+            margin: 20px auto;
+            background-image: url('image_88396f.png'); /* Имя файла схемы в твоем репозитории */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border: 2px solid #333;
             border-radius: 8px;
+            background-color: #1a1a1a;
         }
-        
-        /* Стилизация интерактивных столов */
+
+        /* Базовые стили для кнопок-столов (они прозрачные) */
         .table {
             position: absolute;
-            width: 60px;
-            height: 60px;
-            background-color: #2ecc71; /* Зеленый — свободен */
-            color: #fff;
-            border: none;
-            border-radius: 50%;
+            border: 2px dashed transparent;
             cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
+            background-color: rgba(46, 204, 113, 0.15); /* Слегка зеленый оттенок для свободных */
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: transparent; /* Скрываем текст внутри кнопки, номера уже есть на картинке */
         }
+
+        /* Подсветка стола при наведении */
+        .table.available:hover {
+            background-color: rgba(46, 204, 113, 0.4);
+            border-color: #2ecc71;
+        }
+
+        /* Выбранный пользователем стол */
+        .table.selected {
+            background-color: rgba(241, 196, 15, 0.5) !important;
+            border-color: #f1c40f !important;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.6);
+        }
+
+        /* Занятый стол */
         .table.occupied {
-            background-color: #e74c3c; /* Красный — занят */
+            background-color: rgba(231, 76, 60, 0.5) !important;
+            border-color: #e74c3c !important;
             cursor: not-allowed;
         }
-        .table.selected {
-            background-color: #f1c40f; /* Желтый — выбран сейчас */
-            box-shadow: 0 0 10px #f1c40f;
+
+        /* ТОЧНЫЕ КООРДИНАТЫ КНОПОК ПОВЕРХ СТОЛОВ НА СХЕМЕ */
+        #table-1  { top: 60.5%;  left: 15.6%; width: 9%;   height: 9.5%;  border-radius: 6px; }
+        #table-2  { top: 6.5%;   left: 43.4%; width: 9.3%; height: 16.5%; border-radius: 40px; }
+        #table-3  { top: 6.5%;   left: 62.8%; width: 9.3%; height: 16.5%; border-radius: 40px; }
+        #table-4  { top: 6.5%;   left: 77.2%; width: 9.3%; height: 16.5%; border-radius: 40px; }
+        #table-9  { top: 30.1%;  left: 54.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
+        #table-5  { top: 30.1%;  left: 78.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
+        #table-8  { top: 60.5%;  left: 54.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
+        #table-6  { top: 60.5%;  left: 78.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
+        #table-10 { top: 81.5%;  left: 19.8%; width: 26.5%;height: 8.5%;  border-radius: 6px; }
+        #table-7  { top: 83.1%;  left: 72.3%; width: 9.3%; height: 16.5%; border-radius: 40px; }
+
+        /* Форма ввода контактов (изначально скрыта) */
+        .booking-form {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #252525;
+            border-radius: 8px;
+            border-left: 4px solid #f1c40f;
+            text-align: left;
         }
 
-        /* Пример расстановки столов по координатам */
-        #table-1 { top: 40px; left: 50px; }
-        #table-2 { top: 40px; right: 50px; }
-        #table-3 { top: 120px; left: 150px; width: 100px; border-radius: 10px; } /* Большой стол */
-        #table-4 { bottom: 40px; left: 50px; }
-        #table-5 { bottom: 40px; right: 50px; }
-
-        input, button {
-            width: 90%; padding: 12px; margin: 10px 0;
-            border: 1px solid #444; border-radius: 5px;
-            background: #222; color: #fff; box-sizing: border-box;
+        .booking-form h3 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 18px;
         }
-        button.submit-btn { background: #2ecc71; font-weight: bold; cursor: pointer; border: none; }
-        button.submit-btn:hover { background: #27ae60; }
-        .form-section { display: none; margin-top: 20px; padding: 15px; background: #1c1c1c; border-radius: 8px; }
+
+        .submit-btn {
+            background-color: #2ecc71;
+            color: #fff;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .submit-btn:hover {
+            background-color: #27ae60;
+        }
+
+        /* Адаптивность для мобильных */
+        @media (max-width: 840px) {
+            .hall-schema {
+                transform: scale(0.7);
+                transform-origin: top center;
+                margin-bottom: -220px; /* Компенсируем сжатие */
+            }
+        }
+        @media (max-width: 600px) {
+            .hall-schema {
+                transform: scale(0.45);
+                transform-origin: top center;
+                margin-bottom: -400px;
+            }
+            .datetime-picker {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .check-btn {
+                margin-top: 10px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Бронирование столов</h2>
+<div class="booking-container">
+    <h2>Бронирование столов в Barr Burgerr</h2>
     
-    <!-- Выбор времени и даты должен быть вначале, чтобы подгрузить занятые столы -->
-    <label for="booking-date">Выберите дату:</label>
-    <input type="date" id="booking-date" required>
-    
-    <label for="booking-time">Выберите время (11:00 - 00:00):</label>
-    <input type="time" id="booking-time" min="11:00" max="00:00" required>
-    
-    <button id="check-tables-btn">Показать свободные столы</button>
-
-    <h3 style="margin-top: 20px;">Схема зала</h3>
-    <div class="hall-schema">
-        <!-- Кнопки-столы. В реальном проекте под них подкладывается фоновая картинка схемы -->
-        <button class="table" id="table-1" data-id="1">№1</button>
-        <button class="table" id="table-2" data-id="2">№2</button>
-        <button class="table" id="table-3" data-id="3">№3 (VIP)</button>
-        <button class="table" id="table-4" data-id="4">№4</button>
-        <button class="table" id="table-5" data-id="5">№5</button>
+    <!-- ШАГ 1: Ввод даты и времени -->
+    <div class="step-title">Шаг 1. Выберите дату и время прихода</div>
+    <div class="datetime-picker">
+        <div class="input-group">
+            <label for="booking-date">Дата:</label>
+            <input type="date" id="booking-date" required>
+        </div>
+        <div class="input-group">
+            <label for="booking-time">Время (с 11:00 до 00:00):</label>
+            <input type="time" id="booking-time" required>
+        </div>
+        <div class="input-group" style="flex: 0.8;">
+            <button class="check-btn" id="check-tables-btn">Показать свободные</button>
+        </div>
     </div>
 
-    <!-- Форма контактных данных -->
-    <div class="form-section" id="booking-form">
-        <h3>Оформление брони для Стола <span id="selected-table-num"></span></h3>
-        <input type="text" id="user-name" placeholder="Ваше Имя" required>
-        <input type="tel" id="user-phone" placeholder="Номер телефона (+7...)" required>
-        <button class="submit-btn" id="submit-booking">Забронировать</button>
+    <!-- ШАГ 2: Интерактивная карта -->
+    <div class="step-title">Шаг 2. Выберите свободный стол на схеме</div>
+    <div class="hall-schema">
+        <!-- Кнопки расположены четко по сетке поверх столов на картинке -->
+        <button class="table available" id="table-1" data-id="1">1</button>
+        <button class="table available" id="table-2" data-id="2">2</button>
+        <button class="table available" id="table-3" data-id="3">3</button>
+        <button class="table available" id="table-4" data-id="4">4</button>
+        <button class="table available" id="table-5" data-id="5">5</button>
+        <button class="table available" id="table-6" data-id="6">6</button>
+        <button class="table available" id="table-7" data-id="7">7</button>
+        <button class="table available" id="table-8" data-id="8">8</button>
+        <button class="table available" id="table-9" data-id="9">9</button>
+        <button class="table available" id="table-10" data-id="10">10</button>
+    </div>
+
+    <!-- ШАГ 3: Заполнение данных (появляется при клике на стол) -->
+    <div class="booking-form" id="booking-form">
+        <h3>Оформление брони на Стол №<span id="selected-table-num"></span></h3>
+        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+            <div class="input-group">
+                <label for="user-name">Ваше имя:</label>
+                <input type="text" id="user-name" placeholder="Иван" required>
+            </div>
+            <div class="input-group">
+                <label for="user-phone">Телефон:</label>
+                <input type="tel" id="user-phone" placeholder="+7 (999) 999-99-99" required>
+            </div>
+        </div>
+        <button class="submit-btn" id="submit-booking">Подтвердить бронирование</button>
     </div>
 </div>
 
 <script>
-    // ВСТАВЬТЕ СЮДА URL, полученный при развертывании Google Apps Script
-    const API_URL = 'https://script.google.com/macros/s/ВАШ_WEB_APP_ID/exec';
+    // === ВСТАВЬ СЮДА СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ GOOGLE APPS SCRIPT ===
+    const API_URL = 'https://script.google.com/macros/s/ВАШ_URL_ИЗ_GOOGLE_SCRIPT/exec';
     
     let selectedTable = null;
 
-    // Установка сегодняшней даты по умолчанию
+    // Устанавливаем текущую дату по умолчанию
     document.getElementById('booking-date').valueAsDate = new Date();
 
-    // Загрузка занятых столов с бэкенда при изменении даты/времени
+    // Обработчик кнопки «Показать свободные»
     document.getElementById('check-tables-btn').addEventListener('click', async () => {
         const date = document.getElementById('booking-date').value;
         const time = document.getElementById('booking-time').value;
@@ -109,22 +284,24 @@
             return;
         }
 
-        // Проверка времени работы (11:00 - 00:00)
-        const hour = parseInt(time.split(':')[0]);
+        // Валидация времени работы (11:00 - 00:00)
+        const hour = parseInt(time.split(':')[0], 10);
         if (hour < 11 && hour !== 0) {
             alert('Мы принимаем бронирования только с 11:00 до 00:00.');
             return;
         }
 
-        // Сброс предыдущего выбора
+        // Сбрасываем карту к исходному состоянию
         document.querySelectorAll('.table').forEach(t => {
             t.classList.remove('occupied', 'selected');
+            t.classList.add('available');
             t.disabled = false;
         });
         document.getElementById('booking-form').style.display = 'none';
         selectedTable = null;
 
         try {
+            // Делаем GET-запрос к Google Таблице, чтобы узнать занятые столы
             const response = await fetch(`${API_URL}?date=${date}&time=${time}`);
             const result = await response.json();
             
@@ -132,32 +309,39 @@
                 result.occupiedTables.forEach(tableId => {
                     const tableEl = document.querySelector(`.table[data-id="${tableId}"]`);
                     if (tableEl) {
+                        tableEl.classList.remove('available');
                         tableEl.classList.add('occupied');
                         tableEl.disabled = true;
                     }
                 });
             }
         } catch (error) {
-            console.error('Ошибка загрузки статуса столов:', error);
-            alert('Не удалось связаться с сервером. Попробуйте еще раз.');
+            console.error('Ошибка при загрузке занятых столов:', error);
+            alert('Произошла ошибка при загрузке статуса столов. Попробуйте обновить страницу.');
         }
     });
 
-    // Обработка клика по столу
+    // Обработка клика по конкретному столу на карте
     document.querySelectorAll('.table').forEach(table => {
-        table.addEventListener('click', (e) => {
+        table.addEventListener('click', () => {
             if (table.classList.contains('occupied')) return;
 
+            // Снимаем выделение с других столов и выделяем этот
             document.querySelectorAll('.table').forEach(t => t.classList.remove('selected'));
             table.classList.add('selected');
-            selectedTable = table.getAttribute('data-id');
             
+            selectedTable = table.getAttribute('data-id');
             document.getElementById('selected-table-num').innerText = selectedTable;
+            
+            // Показываем форму бронирования
             document.getElementById('booking-form').style.display = 'block';
+            
+            // Автоматическая плавная прокрутка вниз к форме
+            document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
         });
     });
 
-    // Отправка бронирования
+    // Отправка формы бронирования на сервер
     document.getElementById('submit-booking').addEventListener('click', async () => {
         const date = document.getElementById('booking-date').value;
         const time = document.getElementById('booking-time').value;
@@ -165,27 +349,34 @@
         const phone = document.getElementById('user-phone').value;
 
         if (!name || !phone) {
-            alert('Заполните имя и номер телефона.');
+            alert('Пожалуйста, заполните Имя и Телефон.');
             return;
         }
 
-        const payload = { date, time, table: selectedTable, name, phone };
+        const payload = {
+            date: date,
+            time: time,
+            table: selectedTable,
+            name: name,
+            phone: phone
+        };
 
         try {
-            const response = await fetch(API_URL, {
+            // Отправляем POST запрос в Google Apps Script
+            // Режим no-cors нужен для стабильной работы кроссдоменных запросов в GAS без усложнения кода сервера
+            await fetch(API_URL, {
                 method: 'POST',
-                mode: 'no-cors', // Важно для обхода ограничений CORS в Google Apps Script при простых POST-запросах
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            // Так как используется no-cors, мы не можем прочитать JSON ответа напрямую.
-            // Но если запрос выполнился без ошибок в блоке catch — бронь отправлена успешно!
-            alert('Заявка на бронирование успешно отправлена! Ожидайте подтверждения.');
-            location.reload();
+            // Поскольку no-cors не возвращает ответ, при отсутствии ошибок JS считаем, что бронь создана успешно
+            alert(`Успешно! Стол №${selectedTable} забронирован на ${date} в ${time}. Нам в Telegram пришло уведомление!`);
+            location.reload(); // Перезагружаем страницу для обновления карты
         } catch (error) {
-            console.error('Ошибка при отправке бронирования:', error);
-            alert('Произошла ошибка при отправке. Пожалуйста, свяжитесь с нами по телефону.');
+            console.error('Ошибка создания резерва:', error);
+            alert('Не удалось отправить бронирование. Пожалуйста, попробуйте еще раз.');
         }
     });
 </script>

@@ -4,86 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Бронирование столов | Barr Burgerr</title>
+    <!-- Подключаем библиотеку IMask для маски телефона -->
+    <script src="https://unpkg.com/imask"></script>
     <style>
-        /* Общие стили */
+        /* Общие стили оформления страницы в стиле Barr Burgerr */
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
+            background-color: #151515; /* Мягкий темный фон */
+            color: #f5f5f5;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            min-height: 100vh;
         }
 
         .booking-container {
-            background: #1a1a1a;
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 500px;
+            max-width: 840px;
             width: 100%;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-            border: 1px solid #2a2a2a;
+            background: #1c1c1c; /* Стильный угольный фон */
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
             box-sizing: border-box;
+            border: 1px solid #2a2a2a;
         }
 
         h2 {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 24px;
+            border-bottom: 2px solid #e74c3c; /* Фирменный красный/оранжевый акцент */
+            padding-bottom: 15px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #fff;
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 22px;
-            border-bottom: 2px solid #ff4500;
-            padding-bottom: 10px;
         }
 
-        h3 {
-            color: #ff8c00;
-            text-transform: uppercase;
-            font-size: 14px;
-            letter-spacing: 0.5px;
+        .step-title {
+            text-align: left;
+            font-size: 16px;
+            font-weight: 600;
+            color: #e67e22; /* Оранжевый акцент */
             margin-top: 25px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .form-group {
-            margin-bottom: 15px;
+        /* Поля выбора даты и времени */
+        .datetime-picker {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: space-between;
         }
 
-        label {
+        .input-group {
+            flex: 1;
+        }
+
+        .input-group label {
             display: block;
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #bbb;
             text-transform: uppercase;
         }
 
-        /* Универсальные стили полей с фиксом вылезания на iOS */
         input, select, button {
             width: 100%;
-            max-width: 100%;
+            max-width: 100%; /* Фикс вылезания полей на iOS */
             padding: 12px 15px;
             border: 1px solid #333;
             border-radius: 6px;
             background: #252525;
             color: #fff;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 15px;
             outline: none;
             transition: all 0.3s ease;
-            -webkit-appearance: none;
+            -webkit-appearance: none; /* Корректный рендеринг в iOS Safari */
             appearance: none;
         }
 
-        input:focus, select:focus {
-            border-color: #ff4500;
-            background: #2d2d2d;
-        }
-
-        /* Возвращаем стрелочку кастомным селектам на iOS */
+        /* Восстановление стрелочки в select после отключения appearance */
         select {
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23fff' viewBox='0 0 16 16'><path d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>");
             background-repeat: no-repeat;
@@ -91,85 +95,142 @@
             padding-right: 40px !important;
         }
 
-        /* Интерактивная схема столов */
-        .map-container {
+        input:focus, select:focus {
+            border-color: #e67e22;
+            box-shadow: 0 0 8px rgba(230, 126, 34, 0.4);
+        }
+
+        /* === АДАПТИВНАЯ КАРТА ЗАЛА БЕЗ СЛОМОВ === */
+        .hall-wrapper {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hall-schema {
             position: relative;
             width: 100%;
-            margin-top: 15px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #fff;
+            padding-top: 94%; /* Сохраняет пропорцию 800х752 */
+            background-image: url('reserv.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
             border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #111;
+            transition: opacity 0.3s ease;
         }
 
-        .map-container img {
-            width: 100%;
-            display: block;
-            height: auto;
+        /* Стиль для заблокированной карты */
+        .hall-schema.locked {
+            opacity: 0.25;
+            pointer-events: none; /* Отключаем клики */
         }
 
-        /* Область стола (кнопка поверх схемы) */
-        .table-marker {
+        /* Базовые стили для кнопок-столов */
+        .table {
             position: absolute;
-            background: rgba(0, 200, 0, 0.4); /* Зеленый - свободен */
-            border: 2px solid #00ff00;
-            border-radius: 4px;
+            border: 2px dashed transparent;
             cursor: pointer;
+            background-color: rgba(46, 204, 113, 0.12); /* Зеленоватый полупрозрачный */
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 1px 1px 2px #000;
+            color: transparent;
+            padding: 0;
         }
 
-        .table-marker:hover {
-            background: rgba(0, 250, 0, 0.6);
-            transform: scale(1.05);
+        /* Подсветка стола при наведении */
+        .table.available:hover {
+            background-color: rgba(46, 204, 113, 0.35);
+            border-color: #2ecc71;
         }
 
-        /* Стили состояний столов */
-        .table-marker.selected {
-            background: rgba(255, 140, 0, 0.8) !important; /* Оранжевый - выбран */
-            border-color: #ff8c00 !important;
+        /* Выбранный пользователем стол */
+        .table.selected {
+            background-color: rgba(230, 126, 34, 0.5) !important; /* Оранжевый при выборе */
+            border-color: #e67e22 !important;
+            box-shadow: 0 0 15px rgba(230, 126, 34, 0.6);
         }
 
-        .table-marker.occupied {
-            background: rgba(255, 0, 0, 0.6) !important; /* Красный - занят */
-            border-color: #ff0000 !important;
+        /* Занятый стол */
+        .table.occupied {
+            background-color: rgba(231, 76, 60, 0.4) !important; /* Красный для занятых */
+            border-color: #e74c3c !important;
             cursor: not-allowed;
-            pointer-events: none; /* Отключаем клики */
+            pointer-events: none; /* Блокируем клики на занятом */
         }
 
-        /* Координаты столов (настроены под твою схему) */
-        #table-1 { top: 12%; left: 41%; width: 11%; height: 9%; }
-        #table-2 { top: 12%; left: 54%; width: 11%; height: 9%; }
-        #table-3 { top: 12%; left: 67%; width: 11%; height: 9%; }
-        #table-4 { top: 37%; left: 49%; width: 10%; height: 7%; }
-        #table-5 { top: 37%; left: 66%; width: 10%; height: 7%; }
-        #table-6 { top: 65%; left: 49%; width: 10%; height: 7%; }
-        #table-7 { top: 65%; left: 66%; width: 10%; height: 7%; }
-        #table-8 { top: 65%; left: 23%; width: 10%; height: 7%; }
-        #table-9 { top: 72%; left: 61%; width: 11%; height: 9%; }
-        #table-10 { top: 72%; left: 25%; width: 20%; height: 6%; }
+        /* ТОЧНЫЕ ПРОПОРЦИОНАЛЬНЫЕ КООРДИНАТЫ СТОЛОВ В % */
+        #table-1  { top: 60.5%;  left: 15.6%; width: 9%;   height: 9.5%;  border-radius: 6px; }
+        #table-2  { top: 6.5%;   left: 44.5%; width: 7.2%; height: 12.8%; border-radius: 30px; }
+        #table-3  { top: 6.5%;   left: 63.8%; width: 7.2%; height: 12.8%; border-radius: 30px; }
+        #table-4  { top: 35.8%;  left: 54.3%; width: 7.2%; height: 9.8%;  border-radius: 6px; }
+        #table-5  { top: 35.8%;  left: 71.5%; width: 7.2%; height: 9.8%;  border-radius: 6px; }
+        #table-6  { top: 60.8%;  left: 54.3%; width: 7.2%; height: 9.8%;  border-radius: 6px; }
+        #table-7  { top: 60.8%;  left: 71.5%; width: 7.2%; height: 9.8%;  border-radius: 6px; }
+        #table-8  { top: 66.8%;  left: 28.5%; width: 23%;  height: 9%;    border-radius: 12px; }
+        #table-9  { top: 72.3%;  left: 67%;   width: 7.2%; height: 12.8%; border-radius: 30px; }
+        #table-10 { top: 6.5%;   left: 83%;   width: 7.2%; height: 12.8%; border-radius: 30px; }
 
-        /* Кнопка подтверждения */
+        /* Окно оформления брони */
+        .booking-form {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #222;
+            border-radius: 8px;
+            border-left: 4px solid #e67e22;
+            text-align: left;
+        }
+
+        .booking-form h3 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
         .submit-btn {
-            background: #ff4500;
+            background-color: #e74c3c; /* Фирменный красный цвет кнопки */
             color: #fff;
             font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            border: none;
-            margin-top: 25px;
-            cursor: pointer;
         }
 
         .submit-btn:hover:not(:disabled) {
-            background: #ff5714;
-            box-shadow: 0 0 12px rgba(255,69,0,0.4);
+            background-color: #c0392b;
+        }
+
+        .submit-btn:disabled {
+            background-color: #555 !important;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Мобильная адаптация интерфейса */
+        @media (max-width: 600px) {
+            .datetime-picker {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .booking-form div {
+                flex-direction: column;
+                gap: 12px !important;
+            }
+            .booking-container {
+                padding: 15px;
+            }
+            h2 {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -178,83 +239,80 @@
 <div class="booking-container">
     <h2>Бронирование столов в Barr Burgerr</h2>
 
-    <h3>Шаг 1. Выберите дату и время прихода</h3>
-    
-    <div class="form-group">
-        <label for="booking-date">Дата:</label>
-        <input type="date" id="booking-date">
+    <!-- ШАГ 1: Выбор даты и времени -->
+    <div class="step-title">Шаг 1. Выберите дату и время прихода</div>
+    <div class="datetime-picker">
+        <div class="input-group">
+            <label for="booking-date">Дата:</label>
+            <input type="date" id="booking-date" required>
+        </div>
+        <div class="input-group">
+            <label for="booking-time">Время (интервал 30 минут):</label>
+            <select id="booking-time" required>
+                <option value="">-- Выберите время --</option>
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="12:30">12:30</option>
+                <option value="13:00">13:00</option>
+                <option value="13:30">13:30</option>
+                <option value="14:00">14:00</option>
+                <option value="14:30">14:30</option>
+                <option value="15:00">15:00</option>
+                <option value="15:30">15:30</option>
+                <option value="16:00">16:00</option>
+                <option value="16:30">16:30</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+                <option value="18:30">18:30</option>
+                <option value="19:00">19:00</option>
+                <option value="19:30">19:30</option>
+                <option value="20:00">20:00</option>
+                <option value="20:30">20:30</option>
+                <option value="21:00">21:00</option>
+                <option value="21:30">21:30</option>
+                <option value="22:00">22:00</option>
+                <option value="22:30">22:30</option>
+                <option value="23:00">23:00</option>
+            </select>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label for="booking-time">Время (интервал 30 минут):</label>
-        <select id="booking-time">
-            <option value="">-- Выберите время --</option>
-            <option value="12:00">12:00</option>
-            <option value="12:30">12:30</option>
-            <option value="13:00">13:00</option>
-            <option value="13:30">13:30</option>
-            <option value="14:00">14:00</option>
-            <option value="14:30">14:30</option>
-            <option value="15:00">15:00</option>
-            <option value="15:30">15:30</option>
-            <option value="16:00">16:00</option>
-            <option value="16:30">16:30</option>
-            <option value="17:00">17:00</option>
-            <option value="17:30">17:30</option>
-            <option value="18:00">18:00</option>
-            <option value="18:30">18:30</option>
-            <option value="19:00">19:00</option>
-            <option value="19:30">19:30</option>
-            <option value="20:00">20:00</option>
-            <option value="20:30">20:30</option>
-            <option value="21:00">21:00</option>
-            <option value="21:30">21:30</option>
-            <option value="22:00">22:00</option>
-            <option value="22:30">22:30</option>
-            <option value="23:00">23:00</option>
-        </select>
+    <!-- ШАГ 2: Интерактивная карта -->
+    <div class="step-title">Шаг 2. Выберите свободный стол на схеме</div>
+    <div class="hall-wrapper">
+        <div class="hall-schema locked" id="hall-map">
+            <button class="table available" id="table-1" data-id="1">1</button>
+            <button class="table available" id="table-2" data-id="2">2</button>
+            <button class="table available" id="table-3" data-id="3">3</button>
+            <button class="table available" id="table-4" data-id="4">4</button>
+            <button class="table available" id="table-5" data-id="5">5</button>
+            <button class="table available" id="table-6" data-id="6">6</button>
+            <button class="table available" id="table-7" data-id="7">7</button>
+            <button class="table available" id="table-8" data-id="8">8</button>
+            <button class="table available" id="table-9" data-id="9">9</button>
+            <button class="table available" id="table-10" data-id="10">10</button>
+        </div>
     </div>
 
-    <h3>Шаг 2. Выберите свободный стол на схеме</h3>
-    
-    <div class="map-container">
-        <!-- Твоя схема зала загружается с гитхаба -->
-        <img src="схема.png" alt="Схема зала">
-        
-        <!-- Маркеры столов -->
-        <div class="table-marker" id="table-1" data-table="1">1</div>
-        <div class="table-marker" id="table-2" data-table="2">2</div>
-        <div class="table-marker" id="table-3" data-table="3">3</div>
-        <div class="table-marker" id="table-4" data-table="4">4</div>
-        <div class="table-marker" id="table-5" data-table="5">5</div>
-        <div class="table-marker" id="table-6" data-table="6">6</div>
-        <div class="table-marker" id="table-7" data-table="7">7</div>
-        <div class="table-marker" id="table-8" data-table="8">8</div>
-        <div class="table-marker" id="table-9" data-table="9">9</div>
-        <div class="table-marker" id="table-10" data-table="10">10</div>
-    </div>
-
-    <div id="user-details-section" style="display: none;">
-        <h3>Шаг 3. Введите данные для подтверждения</h3>
-        
-        <div class="form-group">
+    <!-- ШАГ 3: Заполнение данных -->
+    <div class="booking-form" id="booking-form">
+        <h3>Оформление брони на Стол №<span id="selected-table-num"></span></h3>
+        <div class="input-group" style="margin-bottom: 15px;">
             <label for="user-name">Ваше имя:</label>
-            <input type="text" id="user-name" placeholder="Иван">
+            <input type="text" id="user-name" placeholder="Введите имя" required>
         </div>
-
-        <div class="form-group">
-            <label for="user-phone">Номер телефона:</label>
-            <input type="tel" id="user-phone" placeholder="+7 (999) 999-99-99">
+        <div class="input-group" style="margin-bottom: 15px;">
+            <label for="user-phone">Телефон:</label>
+            <input type="tel" id="user-phone" placeholder="+7 (___) ___-__-__" required>
         </div>
-
         <button class="submit-btn" id="submit-booking">Подтвердить бронирование</button>
     </div>
 </div>
 
-<!-- Скрипт маски телефона -->
-<script src="https://unpkg.com/imask"></script>
 <script>
-    // ВСТАВЬ СЮДА СВОЮ URL ВЕБ-ПРИЛОЖЕНИЯ GOOGLE APPS SCRIPT
+    // Твоя ссылка на Google Apps Script интегрирована
     const API_URL = 'https://script.google.com/macros/s/AKfycbwqrwAK21WsMMlTi1VwMrumAgrnygnyIiidNNmy1Rlg85-gvQReIod6D6H546sP0Wc/exec';
 
     let selectedTable = null;
@@ -262,69 +320,72 @@
     // Инициализация маски для телефона
     const phoneInput = document.getElementById('user-phone');
     const maskOptions = { mask: '+7 (000) 000-00-00' };
-    IMask(phoneInput, maskOptions);
+    const phoneMask = IMask(phoneInput, maskOptions);
 
-    // Слушатели изменений даты и времени для проверки занятых столов
-    document.getElementById('booking-date').addEventListener('change', checkOccupiedTables);
-    document.getElementById('booking-time').addEventListener('change', checkOccupiedTables);
+    // Вешаем слушатели событий на изменения параметров даты и времени
+    document.getElementById('booking-date').addEventListener('change', checkBookingParams);
+    document.getElementById('booking-time').addEventListener('change', checkBookingParams);
 
-    // Функция запроса занятых столов
-    async checkOccupiedTables() {
+    function checkBookingParams() {
         const date = document.getElementById('booking-date').value;
         const time = document.getElementById('booking-time').value;
+        const map = document.getElementById('hall-map');
 
-        // Сбрасываем выбранный стол при изменении параметров времени
+        // Сбрасываем выбранный стол
         selectedTable = null;
-        document.getElementById('user-details-section').style.display = 'none';
+        document.getElementById('booking-form').style.display = 'none';
         
-        const markers = document.querySelectorAll('.table-marker');
-        markers.forEach(m => m.classList.remove('selected', 'occupied'));
+        document.querySelectorAll('.table').forEach(t => {
+            t.classList.remove('selected', 'occupied');
+            t.classList.add('available');
+        });
 
-        if (!date || !time) return;
-
-        try {
-            const response = await fetch(`${API_URL}?date=${date}&time=${time}`);
-            const result = await response.json();
-            
-            // Помечаем занятые столы на схеме
-            if (result.occupiedTables && Array.isArray(result.occupiedTables)) {
-                result.occupiedTables.forEach(tableId => {
-                    const el = document.getElementById(`table-${tableId}`);
-                    if (el) el.classList.add('occupied');
-                });
-            }
-        } catch (error) {
-            console.error('Ошибка проверки занятых столов:', error);
+        if (date && time) {
+            map.classList.remove('locked');
+            loadOccupiedTables(date, time);
+        } else {
+            map.classList.add('locked');
         }
     }
 
-    // Логика выбора стола кликом по схеме
-    document.querySelectorAll('.table-marker').forEach(marker => {
-        marker.addEventListener('click', (e) => {
-            if (e.target.classList.contains('occupied')) return;
-
-            const date = document.getElementById('booking-date').value;
-            const time = document.getElementById('booking-time').value;
-
-            if (!date || !time) {
-                alert('Сначала выберите дату и время прихода!');
-                return;
-            }
-
-            // Убираем выделение с прошлого стола
-            document.querySelectorAll('.table-marker').forEach(m => m.classList.remove('selected'));
+    // Загрузка занятых столов с бэкенда
+    async function loadOccupiedTables(date, time) {
+        try {
+            const response = await fetch(`${API_URL}?date=${date}&time=${time}`);
+            const data = await response.json();
             
-            // Выделяем текущий стол
-            e.target.classList.add('selected');
-            selectedTable = e.target.getAttribute('data-table');
+            if (data.occupiedTables && Array.isArray(data.occupiedTables)) {
+                data.occupiedTables.forEach(tableId => {
+                    const tableEl = document.getElementById(`table-${tableId}`);
+                    if (tableEl) {
+                        tableEl.classList.remove('available');
+                        tableEl.classList.add('occupied');
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки занятых столов:', error);
+        }
+    }
 
-            // Показываем форму ввода имени/телефона
-            document.getElementById('user-details-section').style.display = 'block';
-            document.getElementById('user-details-section').scrollIntoView({ behavior: 'smooth' });
+    // Выбор стола на карте
+    document.querySelectorAll('.table').forEach(table => {
+        table.addEventListener('click', function() {
+            if (this.classList.contains('occupied')) return;
+
+            // Убираем прошлый выбор
+            document.querySelectorAll('.table').forEach(t => t.classList.remove('selected'));
+            
+            this.classList.add('selected');
+            selectedTable = this.getAttribute('data-id');
+
+            document.getElementById('selected-table-num').innerText = selectedTable;
+            document.getElementById('booking-form').style.display = 'block';
+            document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
         });
     });
 
-    // Отправка формы бронирования с защитой от двойного клика
+    // Отправка формы бронирования с защитой от дублирования
     document.getElementById('submit-booking').addEventListener('click', async () => {
         const btn = document.getElementById('submit-booking');
         const date = document.getElementById('booking-date').value;
@@ -336,6 +397,10 @@
             alert('Пожалуйста, укажите дату и время.');
             return;
         }
+        if (!selectedTable) {
+            alert('Пожалуйста, выберите стол на схеме.');
+            return;
+        }
         if (!name || !phone) {
             alert('Пожалуйста, заполните Ваше Имя и Телефон.');
             return;
@@ -345,12 +410,11 @@
             return;
         }
 
-        // БЛОКИРУЕМ КНОПКУ, ЧТОБЫ ИСКЛЮЧИТЬ ДУБЛИ
+        // БЛОКИРУЕМ КНОПКУ ПЕРЕД ЗАПРОСОМ
         btn.disabled = true;
         const originalText = btn.innerText;
         btn.innerText = 'ОТПРАВКА БРОНИ...';
         btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
 
         const payload = {
             date: date,
@@ -374,11 +438,10 @@
             console.error('Ошибка создания резерва:', error);
             alert('Не удалось отправить бронирование. Пожалуйста, попробуйте еще раз.');
             
-            // В случае ошибки возвращаем кнопку в рабочее состояние
+            // В случае сетевой ошибки возвращаем кнопку к жизни
             btn.disabled = false;
             btn.innerText = originalText;
             btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
         }
     });
 </script>

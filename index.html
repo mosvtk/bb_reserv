@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бронирование столов</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; text-align: center; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* Схема зала на CSS/кнопках (или можно наложить SVG поверх картинки) */
+        .hall-schema {
+            position: relative;
+            background: #222;
+            border: 2px solid #444;
+            height: 300px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        /* Стилизация интерактивных столов */
+        .table {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: #2ecc71; /* Зеленый — свободен */
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .table.occupied {
+            background-color: #e74c3c; /* Красный — занят */
+            cursor: not-allowed;
+        }
+        .table.selected {
+            background-color: #f1c40f; /* Желтый — выбран сейчас */
+            box-shadow: 0 0 10px #f1c40f;
+        }
+
+        /* Пример расстановки столов по координатам */
+        #table-1 { top: 40px; left: 50px; }
+        #table-2 { top: 40px; right: 50px; }
+        #table-3 { top: 120px; left: 150px; width: 100px; border-radius: 10px; } /* Большой стол */
+        #table-4 { bottom: 40px; left: 50px; }
+        #table-5 { bottom: 40px; right: 50px; }
+
+        input, button {
+            width: 90%; padding: 12px; margin: 10px 0;
+            border: 1px solid #444; border-radius: 5px;
+            background: #222; color: #fff; box-sizing: border-box;
+        }
+        button.submit-btn { background: #2ecc71; font-weight: bold; cursor: pointer; border: none; }
+        button.submit-btn:hover { background: #27ae60; }
+        .form-section { display: none; margin-top: 20px; padding: 15px; background: #1c1c1c; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Бронирование столов</h2>
+    
+    <!-- Выбор времени и даты должен быть вначале, чтобы подгрузить занятые столы -->
+    <label for="booking-date">Выберите дату:</label>
+    <input type="date" id="booking-date" required>
+    
+    <label for="booking-time">Выберите время (11:00 - 00:00):</label>
+    <input type="time" id="booking-time" min="11:00" max="00:00" required>
+    
+    <button id="check-tables-btn">Показать свободные столы</button>
+
+    <h3 style="margin-top: 20px;">Схема зала</h3>
+    <div class="hall-schema">
+        <!-- Кнопки-столы. В реальном проекте под них подкладывается фоновая картинка схемы -->
+        <button class="table" id="table-1" data-id="1">№1</button>
+        <button class="table" id="table-2" data-id="2">№2</button>
+        <button class="table" id="table-3" data-id="3">№3 (VIP)</button>
+        <button class="table" id="table-4" data-id="4">№4</button>
+        <button class="table" id="table-5" data-id="5">№5</button>
+    </div>
+
+    <!-- Форма контактных данных -->
+    <div class="form-section" id="booking-form">
+        <h3>Оформление брони для Стола <span id="selected-table-num"></span></h3>
+        <input type="text" id="user-name" placeholder="Ваше Имя" required>
+        <input type="tel" id="user-phone" placeholder="Номер телефона (+7...)" required>
+        <button class="submit-btn" id="submit-booking">Забронировать</button>
+    </div>
+</div>
+
+<script>
+    // ВСТАВЬТЕ СЮДА URL, полученный при развертывании Google Apps Script
+    const API_URL = 'https://script.google.com/macros/s/ВАШ_WEB_APP_ID/exec';
+    
+    let selectedTable = null;
+
+    // Установка сегодняшней даты по умолчанию
+    document.getElementById('booking-date').valueAsDate = new Date();
+
+    // Загрузка занятых столов с бэкенда при изменении даты/времени
+    document.getElementById('check-tables-btn').addEventListener('click', async () => {
+        const date = document.getElementById('booking-date').value;
+        const time = document.getElementById('booking-time').value;
+
+        if (!date || !time) {
+            alert('Пожалуйста, выберите дату и время.');
+            return;
+        }
+
+        // Проверка времени работы (11:00 - 00:00)
+        const hour = parseInt(time.split(':')[0]);
+        if (hour < 11 && hour !== 0) {
+            alert('Мы принимаем бронирования только с 11:00 до 00:00.');
+            return;
+        }
+
+        // Сброс предыдущего выбора
+        document.querySelectorAll('.table').forEach(t => {
+            t.classList.remove('occupied', 'selected');
+            t.disabled = false;
+        });
+        document.getElementById('booking-form').style.display = 'none';
+        selectedTable = null;
+
+        try {
+            const response = await fetch(`${API_URL}?date=${date}&time=${time}`);
+            const result = await response.json();
+            
+            if (result.occupiedTables) {
+                result.occupiedTables.forEach(tableId => {
+                    const tableEl = document.querySelector(`.table[data-id="${tableId}"]`);
+                    if (tableEl) {
+                        tableEl.classList.add('occupied');
+                        tableEl.disabled = true;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки статуса столов:', error);
+            alert('Не удалось связаться с сервером. Попробуйте еще раз.');
+        }
+    });
+
+    // Обработка клика по столу
+    document.querySelectorAll('.table').forEach(table => {
+        table.addEventListener('click', (e) => {
+            if (table.classList.contains('occupied')) return;
+
+            document.querySelectorAll('.table').forEach(t => t.classList.remove('selected'));
+            table.classList.add('selected');
+            selectedTable = table.getAttribute('data-id');
+            
+            document.getElementById('selected-table-num').innerText = selectedTable;
+            document.getElementById('booking-form').style.display = 'block';
+        });
+    });
+
+    // Отправка бронирования
+    document.getElementById('submit-booking').addEventListener('click', async () => {
+        const date = document.getElementById('booking-date').value;
+        const time = document.getElementById('booking-time').value;
+        const name = document.getElementById('user-name').value;
+        const phone = document.getElementById('user-phone').value;
+
+        if (!name || !phone) {
+            alert('Заполните имя и номер телефона.');
+            return;
+        }
+
+        const payload = { date, time, table: selectedTable, name, phone };
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Важно для обхода ограничений CORS в Google Apps Script при простых POST-запросах
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            // Так как используется no-cors, мы не можем прочитать JSON ответа напрямую.
+            // Но если запрос выполнился без ошибок в блоке catch — бронь отправлена успешно!
+            alert('Заявка на бронирование успешно отправлена! Ожидайте подтверждения.');
+            location.reload();
+        } catch (error) {
+            console.error('Ошибка при отправке бронирования:', error);
+            alert('Произошла ошибка при отправке. Пожалуйста, свяжитесь с нами по телефону.');
+        }
+    });
+</script>
+</body>
+</html>

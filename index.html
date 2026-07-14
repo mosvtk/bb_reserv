@@ -458,6 +458,7 @@
 
     // Отправка формы бронирования
     document.getElementById('submit-booking').addEventListener('click', async () => {
+        const btn = document.getElementById('submit-booking');
         const date = document.getElementById('booking-date').value;
         const time = document.getElementById('booking-time').value;
         const name = document.getElementById('user-name').value;
@@ -471,10 +472,17 @@
             alert('Пожалуйста, заполните Ваше Имя и Телефон.');
             return;
         }
-        if (phone.length < 18) { // Проверка полной заполненности маски +7 (999) 999-99-99
+        if (phone.length < 18) {
             alert('Пожалуйста, введите номер телефона полностью.');
             return;
         }
+
+        // БЛОКИРУЕМ КНОПКУ, ЧТОБЫ ИСКЛЮЧИТЬ ДУБЛИ
+        btn.disabled = true;
+        const originalText = btn.innerText;
+        btn.innerText = 'ОТПРАВКА БРОНИ...';
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
 
         const payload = {
             date: date,
@@ -492,13 +500,19 @@
                 body: JSON.stringify(payload)
             });
 
-            // Кастомный текст успешной брони по твоим требованиям
             alert(`Вы успешно забронировали стол на ${time} ${date}. Ожидайте звонка оператора для подтверждения. Будем ждать Вас, ${name}!`);
             location.reload(); 
         } catch (error) {
             console.error('Ошибка создания резерва:', error);
             alert('Не удалось отправить бронирование. Пожалуйста, попробуйте еще раз.');
+            
+            // В случае ошибки возвращаем кнопку в рабочее состояние
+            btn.disabled = false;
+            btn.innerText = originalText;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
         }
+    });
     });
 </script>
 </body>

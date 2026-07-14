@@ -84,29 +84,35 @@
         /* Контейнер интерактивной карты зала */
         .hall-schema {
             position: relative;
-            width: 800px; /* Фиксированная ширина под пропорции картинки */
-            height: 752px; /* Пропорциональная высота */
+            width: 800px;
+            height: 752px;
             margin: 20px auto;
-            background-image: url('reserv.png'); /* Использовано новое название картинки */
+            background-image: url('reserv.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             border: 2px solid #333;
             border-radius: 8px;
             background-color: #1a1a1a;
+            transition: opacity 0.3s ease;
         }
 
-        /* Базовые стили для кнопок-столов (они прозрачные) */
+        /* Стиль для заблокированной карты, если время не выбрано */
+        .hall-schema.locked {
+            opacity: 0.4;
+        }
+
+        /* Базовые стили для кнопок-столов */
         .table {
             position: absolute;
             border: 2px dashed transparent;
             cursor: pointer;
-            background-color: rgba(46, 204, 113, 0.15); /* Слегка зеленый оттенок для свободных */
+            background-color: rgba(46, 204, 113, 0.15);
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: transparent; /* Номера столов скрыты, они видны на самой картинке */
+            color: transparent;
         }
 
         /* Подсветка стола при наведении */
@@ -129,24 +135,19 @@
             cursor: not-allowed;
         }
 
-        /* ТОЧНЫЕ И УМЕНЬШЕННЫЕ КООРДИНАТЫ КНОПОК ПОД ТВОИ СТОЛЫ */
+        /* ТОЧНЫЕ КООРДИНАТЫ СТОЛОВ */
         #table-1  { top: 60.5%;  left: 15.6%; width: 9%;   height: 9.5%;  border-radius: 6px; }
-        
-        /* Уменьшенные овальные столы сверху (№ 2, 3, 4) */
         #table-2  { top: 6.5%;   left: 44.5%; width: 7.2%; height: 12.8%; border-radius: 30px; }
         #table-3  { top: 6.5%;   left: 63.8%; width: 7.2%; height: 12.8%; border-radius: 30px; }
         #table-4  { top: 6.5%;   left: 78.2%; width: 7.2%; height: 12.8%; border-radius: 30px; }
-        
         #table-9  { top: 30.1%;  left: 54.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
         #table-5  { top: 30.1%;  left: 78.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
         #table-8  { top: 60.5%;  left: 54.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
         #table-6  { top: 60.5%;  left: 78.2%; width: 10.8%;height: 11.5%; border-radius: 6px; }
         #table-10 { top: 81.5%;  left: 19.8%; width: 26.5%;height: 8.5%;  border-radius: 6px; }
-        
-        /* Уменьшенный овальный стол снизу справа (№ 7) */
         #table-7  { top: 83.1%;  left: 73.3%; width: 7.2%; height: 12.8%; border-radius: 30px; }
 
-        /* Форма ввода контактов (изначально скрыта) */
+        /* Форма ввода контактов */
         .booking-form {
             display: none;
             margin-top: 30px;
@@ -176,7 +177,6 @@
             background-color: #27ae60;
         }
 
-        /* Адаптивность для мобильных */
         @media (max-width: 840px) {
             .hall-schema {
                 transform: scale(0.7);
@@ -217,7 +217,7 @@
 
     <!-- ШАГ 2: Интерактивная карта -->
     <div class="step-title">Шаг 2. Выберите свободный стол на схеме</div>
-    <div class="hall-schema">
+    <div class="hall-schema locked" id="hall-map">
         <button class="table available" id="table-1" data-id="1">1</button>
         <button class="table available" id="table-2" data-id="2">2</button>
         <button class="table available" id="table-3" data-id="3">3</button>
@@ -230,7 +230,7 @@
         <button class="table available" id="table-10" data-id="10">10</button>
     </div>
 
-    <!-- ШАГ 3: Заполнение данных (появляется при клике на стол) -->
+    <!-- ШАГ 3: Заполнение данных -->
     <div class="booking-form" id="booking-form">
         <h3>Оформление брони на Стол №<span id="selected-table-num"></span></h3>
         <div style="display: flex; gap: 15px; margin-bottom: 10px;">
@@ -253,56 +253,90 @@
     
     let selectedTable = null;
 
-    // Настройка ограничений по дате и времени при загрузке
+    // Настройка автоматических умных дефолтов по времени при загрузке страницы
     window.addEventListener('DOMContentLoaded', () => {
         const dateInput = document.getElementById('booking-date');
         const timeInput = document.getElementById('booking-time');
         
-        // Получаем сегодняшнюю дату в формате YYYY-MM-DD в локальном часовом поясе
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const todayStr = `${yyyy}-${mm}-${dd}`;
+        const now = new Date();
+        let yyyy = now.getFullYear();
+        let mm = String(now.getMonth() + 1).padStart(2, '0');
+        let dd = String(now.getDate()).padStart(2, '0');
         
-        // Устанавливаем минимальную дату (прошедшие дни выбрать нельзя)
-        dateInput.min = todayStr;
-        // По умолчанию ставим сегодняшний день
-        dateInput.value = todayStr;
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
 
-        // По умолчанию выставим ближайшее рабочее время (например, 11:00)
-        timeInput.value = "11:00";
+        // Округляем минуты к ближайшему будущему получасу
+        if (minutes > 0 && minutes <= 30) {
+            minutes = 30;
+        } else if (minutes > 30) {
+            minutes = 0;
+            hours += 1;
+        }
 
-        // Сразу запускаем первичную проверку столов на сегодня 11:00
+        // Если ресторан на сегодня уже закрыт или закрывается (после 23:30) — ставим на завтра на 11:00
+        if (hours >= 24 || (hours === 23 && minutes > 30)) {
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            yyyy = tomorrow.getFullYear();
+            mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+            dd = String(tomorrow.getDate()).padStart(2, '0');
+            hours = 11;
+            minutes = 0;
+        } else if (hours < 11) {
+            // Если слишком рано утром — ставим сегодня на открытие (11:00)
+            hours = 11;
+            minutes = 0;
+        }
+
+        const defaultDateStr = `${yyyy}-${mm}-${dd}`;
+        const defaultTimeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+        // Устанавливаем минимальную дату (прошедшие дни заблокированы)
+        dateInput.min = defaultDateStr;
+        dateInput.value = defaultDateStr;
+        timeInput.value = defaultTimeStr;
+
+        // Сразу запускаем проверку на основе безопасных умных дефолтов
         checkAvailableTables();
     });
 
-    // Функция автоматической проверки столов
+    // Функция проверки свободных столов
     async function checkAvailableTables() {
         const dateInput = document.getElementById('booking-date');
         const timeInput = document.getElementById('booking-time');
+        const mapContainer = document.getElementById('hall-map');
         
         const date = dateInput.value;
         const time = timeInput.value;
 
-        if (!date || !time) return;
+        // Если одно из полей стёрто — блокируем карту и уходим
+        if (!date || !time) {
+            mapContainer.classList.add('locked');
+            return;
+        }
 
-        // Валидация прошедшего времени, если выбрана сегодняшняя дата
-        const todayStr = new Date().toISOString().split('T')[0];
+        // Валидация: если выбрана сегодняшняя дата, нельзя выбрать прошедшее время
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
         if (date === todayStr) {
-            const now = new Date();
-            const currentHour = now.getHours();
-            const currentMinute = now.getMinutes();
+            const currentHour = today.getHours();
+            const currentMinute = today.getMinutes();
             const [selectedHour, selectedMinute] = time.split(':').map(Number);
             
             if (selectedHour < currentHour || (selectedHour === currentHour && selectedMinute < currentMinute)) {
-                alert('Вы выбрали прошедшее время на сегодня. Пожалуйста, выберите актуальное время.');
-                timeInput.value = "";
+                alert('Вы выбрали прошедшее время на сегодня. Пожалуйста, укажите актуальное время.');
+                // Сбрасываем к актуальному часу
+                let resetHour = currentHour;
+                let resetMin = currentMinute > 30 ? 0 : 30;
+                if (currentMinute > 30) resetHour += 1;
+                timeInput.value = `${String(resetHour).padStart(2, '0')}:${String(resetMin).padStart(2, '0')}`;
                 return;
             }
         }
 
-        // Проверка диапазона работы (11:00 - 00:00)
+        // Проверка диапазона работы заведения (с 11:00 до 00:00)
         const hour = parseInt(time.split(':')[0], 10);
         if (hour < 11 && hour !== 0) {
             alert('Мы принимаем бронирования только с 11:00 до 00:00.');
@@ -310,7 +344,7 @@
             return;
         }
 
-        // Сброс предыдущего выбора столов
+        // Сбрасываем визуальные состояния столов
         document.querySelectorAll('.table').forEach(t => {
             t.classList.remove('occupied', 'selected');
             t.classList.add('available');
@@ -319,8 +353,11 @@
         document.getElementById('booking-form').style.display = 'none';
         selectedTable = null;
 
+        // Разблокируем визуально карту для выбора стола
+        mapContainer.classList.remove('locked');
+
         try {
-            // Запрашиваем состояние столов у Google-скрипта
+            // Запрос к веб-приложению Google Script
             const response = await fetch(`${API_URL}?date=${date}&time=${time}`);
             const result = await response.json();
             
@@ -335,17 +372,26 @@
                 });
             }
         } catch (error) {
-            console.error('Ошибка при загрузке свободных столов:', error);
+            console.error('Ошибка получения данных по столам:', error);
         }
     }
 
-    // Слушаем изменения в дате и времени — кнопка больше не нужна!
+    // Слушатели автоматического обновления при изменении даты/времени
     document.getElementById('booking-date').addEventListener('change', checkAvailableTables);
     document.getElementById('booking-time').addEventListener('change', checkAvailableTables);
 
-    // Обработка клика по конкретному столу на карте
+    // Обработка клика по столу
     document.querySelectorAll('.table').forEach(table => {
         table.addEventListener('click', () => {
+            const date = document.getElementById('booking-date').value;
+            const time = document.getElementById('booking-time').value;
+
+            // Если время или дата не выбраны, не даём забронировать
+            if (!date || !time) {
+                alert('Пожалуйста, сначала укажите дату и время вашего визита в Шаге 1.');
+                return;
+            }
+
             if (table.classList.contains('occupied')) return;
 
             document.querySelectorAll('.table').forEach(t => t.classList.remove('selected'));
@@ -354,21 +400,25 @@
             selectedTable = table.getAttribute('data-id');
             document.getElementById('selected-table-num').innerText = selectedTable;
             
-            // Показываем форму бронирования и плавно прокручиваем к ней
+            // Показываем форму данных
             document.getElementById('booking-form').style.display = 'block';
             document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
         });
     });
 
-    // Отправка формы бронирования на сервер
+    // Отправка данных на бронирование
     document.getElementById('submit-booking').addEventListener('click', async () => {
         const date = document.getElementById('booking-date').value;
         const time = document.getElementById('booking-time').value;
         const name = document.getElementById('user-name').value;
         const phone = document.getElementById('user-phone').value;
 
+        if (!date || !time) {
+            alert('Пожалуйста, укажите дату и время.');
+            return;
+        }
         if (!name || !phone) {
-            alert('Пожалуйста, заполните Имя и Телефон.');
+            alert('Пожалуйста, заполните Ваше Имя и Телефон.');
             return;
         }
 

@@ -401,6 +401,9 @@
         document.querySelectorAll('.table').forEach(t => {
             t.classList.remove('selected', 'occupied');
             t.classList.add('available');
+            // Сбрасываем принудительную блокировку кликов и прозрачность
+            t.style.pointerEvents = 'auto';
+            t.style.opacity = '1';
         });
 
         if (date && time) {
@@ -414,8 +417,10 @@
     // Загрузка занятых столов с бэкенда
     async function loadOccupiedTables(date, time) {
         try {
+            console.log(`[Бронирование] Запрос занятых столов на дату: ${date}, время: ${time}`);
             const response = await fetch(`${API_URL}?date=${date}&time=${time}`);
             const data = await response.json();
+            console.log('[Бронирование] Ответ от сервера:', data);
             
             if (data.occupiedTables && Array.isArray(data.occupiedTables)) {
                 data.occupiedTables.forEach(tableId => {
@@ -423,11 +428,19 @@
                     if (tableEl) {
                         tableEl.classList.remove('available');
                         tableEl.classList.add('occupied');
+                        
+                        // ПРИНУДИТЕЛЬНАЯ ЗАЩИТА: делаем стол некликабельным и визуально приглушенным
+                        tableEl.style.pointerEvents = 'none';
+                        tableEl.style.opacity = '0.4';
+                        
+                        console.log(`[Бронирование] Стол №${tableId} успешно заблокирован на карте.`);
+                    } else {
+                        console.warn(`[Бронирование] Внимание! В таблице занят стол №${tableId}, но на HTML-схеме не найден элемент с id="table-${tableId}"`);
                     }
                 });
             }
         } catch (error) {
-            console.error('Ошибка загрузки занятых столов:', error);
+            console.error('[Бронирование] Ошибка загрузки занятых столов:', error);
         }
     }
 
@@ -507,6 +520,10 @@
             btn.style.opacity = '1';
         }
     });
+
+    // ПРИНУДИТЕЛЬНЫЙ ЗАПУСК ИНИЦИАЛИЗАЦИИ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+    document.addEventListener('DOMContentLoaded', initDateTime);
+</script>
 
     // Запускаем автоопределение даты и времени при загрузке страницы
     window.addEventListener('DOMContentLoaded', initDateTime);

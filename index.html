@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Бронирование столов — Barr Burgerr</title>
+    <!-- Подключаем библиотеку IMask для маски телефона -->
+    <script src="https://unpkg.com/imask"></script>
     <style>
         /* Общие стили оформления страницы */
         body {
@@ -210,8 +212,37 @@
             <input type="date" id="booking-date" required>
         </div>
         <div class="input-group">
-            <label for="booking-time">Время (с 11:00 до 00:00, шаг 30 мин):</label>
-            <input type="time" id="booking-time" min="11:00" max="23:30" step="1800" required>
+            <label for="booking-time">Время (интервал 30 минут):</label>
+            <!-- Обычный инпут заменен на выпадающий список для исключения ошибок ввода -->
+            <select id="booking-time" required>
+                <option value="">-- Выберите время --</option>
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="12:30">12:30</option>
+                <option value="13:00">13:00</option>
+                <option value="13:30">13:30</option>
+                <option value="14:00">14:00</option>
+                <option value="14:30">14:30</option>
+                <option value="15:00">15:00</option>
+                <option value="15:30">15:30</option>
+                <option value="16:00">16:00</option>
+                <option value="16:30">16:30</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+                <option value="18:30">18:30</option>
+                <option value="19:00">19:00</option>
+                <option value="19:30">19:30</option>
+                <option value="20:00">20:00</option>
+                <option value="20:30">20:30</option>
+                <option value="21:00">21:00</option>
+                <option value="21:30">21:30</option>
+                <option value="22:00">22:00</option>
+                <option value="22:30">22:30</option>
+                <option value="23:00">23:00</option>
+                <option value="23:30">23:30</option>
+            </select>
         </div>
     </div>
 
@@ -248,13 +279,18 @@
 </div>
 
 <script>
-    // === ВСТАВЬ СЮДА СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ GOOGLE APPS SCRIPT ===
-    const API_URL = 'https://script.google.com/macros/s/ВАШ_URL_ИЗ_GOOGLE_SCRIPT/exec';
+    // Твоя ссылка на Google Apps Script интегрирована
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwqrwAK21WsMMlTi1VwMrumAgrnygnyIiidNNmy1Rlg85-gvQReIod6D6H546sP0Wc/exec';
     
     let selectedTable = null;
 
-    // Настройка автоматических умных дефолтов по времени при загрузке страницы
+    // Инициализация маски для телефона при загрузке страницы
     window.addEventListener('DOMContentLoaded', () => {
+        const phoneInput = document.getElementById('user-phone');
+        IMask(phoneInput, {
+            mask: '+{7} (000) 000-00-00'
+        });
+
         const dateInput = document.getElementById('booking-date');
         const timeInput = document.getElementById('booking-time');
         
@@ -266,7 +302,7 @@
         let hours = now.getHours();
         let minutes = now.getMinutes();
 
-        // Округляем минуты к ближайшему будущему получасу
+        // Округляем до ближайшего получаса для дефолта
         if (minutes > 0 && minutes <= 30) {
             minutes = 30;
         } else if (minutes > 30) {
@@ -274,7 +310,7 @@
             hours += 1;
         }
 
-        // Если ресторан на сегодня уже закрыт или закрывается (после 23:30) — ставим на завтра на 11:00
+        // Если ресторан на сегодня уже закрывается/закрыт (после 23:30), выставляем завтра 11:00
         if (hours >= 24 || (hours === 23 && minutes > 30)) {
             const tomorrow = new Date(now);
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -284,7 +320,6 @@
             hours = 11;
             minutes = 0;
         } else if (hours < 11) {
-            // Если слишком рано утром — ставим сегодня на открытие (11:00)
             hours = 11;
             minutes = 0;
         }
@@ -292,12 +327,11 @@
         const defaultDateStr = `${yyyy}-${mm}-${dd}`;
         const defaultTimeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 
-        // Устанавливаем минимальную дату (прошедшие дни заблокированы)
         dateInput.min = defaultDateStr;
         dateInput.value = defaultDateStr;
         timeInput.value = defaultTimeStr;
 
-        // Сразу запускаем проверку на основе безопасных умных дефолтов
+        // Автоматически проверяем столы с учетом умного дефолта времени
         checkAvailableTables();
     });
 
@@ -310,13 +344,13 @@
         const date = dateInput.value;
         const time = timeInput.value;
 
-        // Если одно из полей стёрто — блокируем карту и уходим
+        // Если дата или время не выбраны — полностью блокируем карту
         if (!date || !time) {
             mapContainer.classList.add('locked');
             return;
         }
 
-        // Валидация: если выбрана сегодняшняя дата, нельзя выбрать прошедшее время
+        // Валидация на прошедшее время текущего дня
         const today = new Date();
         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         
@@ -327,24 +361,24 @@
             
             if (selectedHour < currentHour || (selectedHour === currentHour && selectedMinute < currentMinute)) {
                 alert('Вы выбрали прошедшее время на сегодня. Пожалуйста, укажите актуальное время.');
-                // Сбрасываем к актуальному часу
+                
+                // Перенаправляем на ближайший доступный интервал
                 let resetHour = currentHour;
                 let resetMin = currentMinute > 30 ? 0 : 30;
                 if (currentMinute > 30) resetHour += 1;
-                timeInput.value = `${String(resetHour).padStart(2, '0')}:${String(resetMin).padStart(2, '0')}`;
+                
+                if (resetHour >= 24 || (resetHour === 23 && resetMin > 30)) {
+                    timeInput.value = "";
+                    mapContainer.classList.add('locked');
+                } else {
+                    timeInput.value = `${String(resetHour).padStart(2, '0')}:${String(resetMin).padStart(2, '0')}`;
+                    checkAvailableTables(); // рекурсивный перезапуск с валидным временем
+                }
                 return;
             }
         }
 
-        // Проверка диапазона работы заведения (с 11:00 до 00:00)
-        const hour = parseInt(time.split(':')[0], 10);
-        if (hour < 11 && hour !== 0) {
-            alert('Мы принимаем бронирования только с 11:00 до 00:00.');
-            timeInput.value = "11:00";
-            return;
-        }
-
-        // Сбрасываем визуальные состояния столов
+        // Сбрасываем карту к исходному состоянию перед запросом
         document.querySelectorAll('.table').forEach(t => {
             t.classList.remove('occupied', 'selected');
             t.classList.add('available');
@@ -353,11 +387,10 @@
         document.getElementById('booking-form').style.display = 'none';
         selectedTable = null;
 
-        // Разблокируем визуально карту для выбора стола
+        // Разблокируем интерактивную карту
         mapContainer.classList.remove('locked');
 
         try {
-            // Запрос к веб-приложению Google Script
             const response = await fetch(`${API_URL}?date=${date}&time=${time}`);
             const result = await response.json();
             
@@ -376,7 +409,6 @@
         }
     }
 
-    // Слушатели автоматического обновления при изменении даты/времени
     document.getElementById('booking-date').addEventListener('change', checkAvailableTables);
     document.getElementById('booking-time').addEventListener('change', checkAvailableTables);
 
@@ -386,7 +418,7 @@
             const date = document.getElementById('booking-date').value;
             const time = document.getElementById('booking-time').value;
 
-            // Если время или дата не выбраны, не даём забронировать
+            // Жесткая проверка: без выбранного времени и даты взаимодействие запрещено
             if (!date || !time) {
                 alert('Пожалуйста, сначала укажите дату и время вашего визита в Шаге 1.');
                 return;
@@ -400,13 +432,12 @@
             selectedTable = table.getAttribute('data-id');
             document.getElementById('selected-table-num').innerText = selectedTable;
             
-            // Показываем форму данных
             document.getElementById('booking-form').style.display = 'block';
             document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth' });
         });
     });
 
-    // Отправка данных на бронирование
+    // Отправка формы бронирования
     document.getElementById('submit-booking').addEventListener('click', async () => {
         const date = document.getElementById('booking-date').value;
         const time = document.getElementById('booking-time').value;
@@ -419,6 +450,10 @@
         }
         if (!name || !phone) {
             alert('Пожалуйста, заполните Ваше Имя и Телефон.');
+            return;
+        }
+        if (phone.length < 18) { // Проверка полной заполненности маски +7 (999) 999-99-99
+            alert('Пожалуйста, введите номер телефона полностью.');
             return;
         }
 
@@ -438,7 +473,8 @@
                 body: JSON.stringify(payload)
             });
 
-            alert(`Успешно! Стол №${selectedTable} забронирован на ${date} в ${time}. Нам в Telegram отправлено уведомление!`);
+            // Кастомный текст успешной брони по твоим требованиям
+            alert(`Вы успешно забронировали стол на ${time} ${date}. Ожидайте звонка оператора для подтверждения. Будем ждать Вас, ${name}!`);
             location.reload(); 
         } catch (error) {
             console.error('Ошибка создания резерва:', error);

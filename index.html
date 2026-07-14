@@ -73,7 +73,7 @@
 
         input, select, button {
             width: 100%;
-            max-width: 100%; /* Фикс вылезания полей на iOS */
+            max-width: 100%;
             padding: 12px 15px;
             border: 1px solid #333;
             border-radius: 6px;
@@ -83,16 +83,23 @@
             font-size: 15px;
             outline: none;
             transition: all 0.3s ease;
-            -webkit-appearance: none; /* Корректный рендеринг в iOS Safari */
-            appearance: none;
         }
 
-        /* Восстановление стрелочки в select после отключения appearance */
+        /* Настройка выпадающего списка (убираем дефолтную стрелку браузера и ставим свою красивую) */
         select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23fff' viewBox='0 0 16 16'><path d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>");
             background-repeat: no-repeat;
             background-position: right 15px center;
             padding-right: 40px !important;
+        }
+
+        /* Возвращаем стандартную иконку календаря для инпута даты */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1); /* Делает иконку календаря белой на темном фоне */
+            cursor: pointer;
         }
 
         input:focus, select:focus {

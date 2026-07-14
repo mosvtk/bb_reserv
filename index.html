@@ -7,42 +7,48 @@
     <!-- Подключаем библиотеку IMask для маски телефона -->
     <script src="https://unpkg.com/imask"></script>
     <style>
-        /* Общие стили оформления страницы */
+        /* Общие стили оформления страницы в стиле Barr Burgerr */
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
+            background-color: #151515; /* Мягкий темный фон */
+            color: #f5f5f5;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
         .booking-container {
-            max-width: 900px;
+            max-width: 840px;
             width: 100%;
-            background: #1e1e1e;
-            padding: 30px;
+            background: #1c1c1c; /* Стильный угольный фон */
+            padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
             box-sizing: border-box;
+            border: 1px solid #2a2a2a;
         }
 
         h2 {
             margin-top: 0;
             color: #ffffff;
             font-size: 24px;
-            border-bottom: 1px solid #333;
+            border-bottom: 2px solid #e74c3c; /* Фирменный красный/оранжевый акцент */
             padding-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .step-title {
             text-align: left;
-            font-size: 18px;
-            color: #f1c40f;
-            margin-top: 20px;
-            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #e67e22; /* Оранжевый акцент */
+            margin-top: 25px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Поля выбора даты и времени */
@@ -50,7 +56,6 @@
             display: flex;
             gap: 15px;
             margin-bottom: 25px;
-            justify-content: space-between;
         }
 
         .input-group {
@@ -61,83 +66,95 @@
         .input-group label {
             display: block;
             margin-bottom: 8px;
-            font-size: 14px;
-            color: #aaa;
+            font-size: 13px;
+            color: #bbb;
+            text-transform: uppercase;
         }
 
         input, select, button {
             width: 100%;
-            padding: 12px;
+            padding: 12px 15px;
             border: 1px solid #333;
             border-radius: 6px;
-            background: #2d2d2d;
+            background: #252525;
             color: #fff;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 15px;
             outline: none;
             transition: all 0.3s ease;
         }
 
         input:focus, select:focus {
-            border-color: #f1c40f;
-            box-shadow: 0 0 5px rgba(241, 196, 15, 0.3);
+            border-color: #e67e22;
+            box-shadow: 0 0 8px rgba(230, 126, 34, 0.4);
         }
 
-        /* Контейнер интерактивной карты зала */
+        /* === АДАПТИВНАЯ КАРТА ЗАЛА БЕЗ СЛОМОВ === */
+        /* Обертка, которая следит за пропорциями картинки reserv.png (оригинал: 800х752) */
+        .hall-wrapper {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Пропорциональный контейнер (высота вычисляется автоматически: 752 / 800 * 100 = 94%) */
         .hall-schema {
             position: relative;
-            width: 800px;
-            height: 752px;
-            margin: 20px auto;
+            width: 100%;
+            padding-top: 94%; 
             background-image: url('reserv.png');
-            background-size: contain;
+            background-size: 100% 100%;
             background-repeat: no-repeat;
             background-position: center;
-            border: 2px solid #333;
+            border: 1px solid #333;
             border-radius: 8px;
-            background-color: #1a1a1a;
+            background-color: #111;
             transition: opacity 0.3s ease;
         }
 
-        /* Стиль для заблокированной карты, если время не выбрано */
+        /* Стиль для заблокированной карты */
         .hall-schema.locked {
-            opacity: 0.4;
+            opacity: 0.25;
+            pointer-events: none; /* Полностью отключаем клики */
         }
 
-        /* Базовые стили для кнопок-столов */
+        /* Кнопки-столы позиционируются в % от размера карты */
         .table {
             position: absolute;
             border: 2px dashed transparent;
             cursor: pointer;
-            background-color: rgba(46, 204, 113, 0.15);
-            transition: all 0.3s ease;
+            background-color: rgba(46, 204, 113, 0.12); /* Зеленоватый полупрозрачный для свободных */
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             color: transparent;
+            padding: 0;
         }
 
         /* Подсветка стола при наведении */
         .table.available:hover {
-            background-color: rgba(46, 204, 113, 0.4);
+            background-color: rgba(46, 204, 113, 0.35);
             border-color: #2ecc71;
         }
 
         /* Выбранный пользователем стол */
         .table.selected {
-            background-color: rgba(241, 196, 15, 0.5) !important;
-            border-color: #f1c40f !important;
-            box-shadow: 0 0 15px rgba(241, 196, 15, 0.6);
+            background-color: rgba(230, 126, 34, 0.5) !important; /* Оранжевый при выборе */
+            border-color: #e67e22 !important;
+            box-shadow: 0 0 15px rgba(230, 126, 34, 0.6);
         }
 
         /* Занятый стол */
         .table.occupied {
-            background-color: rgba(231, 76, 60, 0.5) !important;
+            background-color: rgba(231, 76, 60, 0.4) !important; /* Красный для занятых */
             border-color: #e74c3c !important;
             cursor: not-allowed;
         }
 
-        /* ТОЧНЫЕ КООРДИНАТЫ СТОЛОВ */
+        /* ТОЧНЫЕ ПРОПОРЦИОНАЛЬНЫЕ КООРДИНАТЫ СТОЛОВ В % */
         #table-1  { top: 60.5%;  left: 15.6%; width: 9%;   height: 9.5%;  border-radius: 6px; }
         #table-2  { top: 6.5%;   left: 44.5%; width: 7.2%; height: 12.8%; border-radius: 30px; }
         #table-3  { top: 6.5%;   left: 63.8%; width: 7.2%; height: 12.8%; border-radius: 30px; }
@@ -154,9 +171,9 @@
             display: none;
             margin-top: 30px;
             padding: 20px;
-            background: #252525;
+            background: #222;
             border-radius: 8px;
-            border-left: 4px solid #f1c40f;
+            border-left: 4px solid #e67e22;
             text-align: left;
         }
 
@@ -167,34 +184,35 @@
         }
 
         .submit-btn {
-            background-color: #2ecc71;
+            background-color: #e74c3c; /* Фирменный красный цвет кнопки */
             color: #fff;
             font-weight: bold;
             border: none;
             cursor: pointer;
             margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .submit-btn:hover {
-            background-color: #27ae60;
+            background-color: #c0392b;
         }
 
-        @media (max-width: 840px) {
-            .hall-schema {
-                transform: scale(0.7);
-                transform-origin: top center;
-                margin-bottom: -220px;
-            }
-        }
+        /* Мобильная адаптация интерфейса */
         @media (max-width: 600px) {
-            .hall-schema {
-                transform: scale(0.45);
-                transform-origin: top center;
-                margin-bottom: -400px;
-            }
             .datetime-picker {
                 flex-direction: column;
-                gap: 10px;
+                gap: 12px;
+            }
+            .booking-form div {
+                flex-direction: column;
+                gap: 12px !important;
+            }
+            .booking-container {
+                padding: 15px;
+            }
+            h2 {
+                font-size: 20px;
             }
         }
     </style>
@@ -213,7 +231,6 @@
         </div>
         <div class="input-group">
             <label for="booking-time">Время (интервал 30 минут):</label>
-            <!-- Обычный инпут заменен на выпадающий список для исключения ошибок ввода -->
             <select id="booking-time" required>
                 <option value="">-- Выберите время --</option>
                 <option value="11:00">11:00</option>
@@ -248,17 +265,19 @@
 
     <!-- ШАГ 2: Интерактивная карта -->
     <div class="step-title">Шаг 2. Выберите свободный стол на схеме</div>
-    <div class="hall-schema locked" id="hall-map">
-        <button class="table available" id="table-1" data-id="1">1</button>
-        <button class="table available" id="table-2" data-id="2">2</button>
-        <button class="table available" id="table-3" data-id="3">3</button>
-        <button class="table available" id="table-4" data-id="4">4</button>
-        <button class="table available" id="table-5" data-id="5">5</button>
-        <button class="table available" id="table-6" data-id="6">6</button>
-        <button class="table available" id="table-7" data-id="7">7</button>
-        <button class="table available" id="table-8" data-id="8">8</button>
-        <button class="table available" id="table-9" data-id="9">9</button>
-        <button class="table available" id="table-10" data-id="10">10</button>
+    <div class="hall-wrapper">
+        <div class="hall-schema locked" id="hall-map">
+            <button class="table available" id="table-1" data-id="1">1</button>
+            <button class="table available" id="table-2" data-id="2">2</button>
+            <button class="table available" id="table-3" data-id="3">3</button>
+            <button class="table available" id="table-4" data-id="4">4</button>
+            <button class="table available" id="table-5" data-id="5">5</button>
+            <button class="table available" id="table-6" data-id="6">6</button>
+            <button class="table available" id="table-7" data-id="7">7</button>
+            <button class="table available" id="table-8" data-id="8">8</button>
+            <button class="table available" id="table-9" data-id="9">9</button>
+            <button class="table available" id="table-10" data-id="10">10</button>
+        </div>
     </div>
 
     <!-- ШАГ 3: Заполнение данных -->
@@ -279,7 +298,7 @@
 </div>
 
 <script>
-    // Твоя ссылка на Google Apps Script интегрирована
+    // Ссылка на Google Apps Script интегрирована
     const API_URL = 'https://script.google.com/macros/s/AKfycbwqrwAK21WsMMlTi1VwMrumAgrnygnyIiidNNmy1Rlg85-gvQReIod6D6H546sP0Wc/exec';
     
     let selectedTable = null;

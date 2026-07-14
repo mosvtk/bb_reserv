@@ -329,9 +329,65 @@
     const maskOptions = { mask: '+7 (000) 000-00-00' };
     const phoneMask = IMask(phoneInput, maskOptions);
 
-    // Вешаем слушатели событий на изменения параметров даты и времени
+    // Слушатели событий на изменение даты и времени
     document.getElementById('booking-date').addEventListener('change', checkBookingParams);
     document.getElementById('booking-time').addEventListener('change', checkBookingParams);
+
+    // Функция автоматического расчёта времени и инициализации страницы
+    function initDateTime() {
+        const now = new Date();
+        let targetDate = new Date(now);
+        let targetHour = now.getHours();
+        let targetMin = now.getMinutes();
+
+        // Округляем минуты в большую сторону до ближайших 30
+        if (targetMin > 0 && targetMin <= 30) {
+            targetMin = 30;
+        } else if (targetMin > 30) {
+            targetMin = 0;
+            targetHour += 1;
+        }
+
+        // Если ресторан уже закрыт (бронировать на сегодня после 23:00 нет смысла)
+        if (targetHour >= 23 || targetHour < 11) {
+            // Если пришли ночью до 11:00, ставим сегодняшнее утро открытия
+            if (targetHour < 11) {
+                targetHour = 11;
+                targetMin = 0;
+            } else {
+                // Если после 23:00, переключаем на завтрашний день
+                targetDate.setDate(targetDate.getDate() + 1);
+                targetHour = 11;
+                targetMin = 0;
+            }
+        }
+
+        // Форматируем дату в YYYY-MM-DD
+        const yyyy = targetDate.getFullYear();
+        const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(targetDate.getDate()).padStart(2, '0');
+        const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+        // Форматируем время в HH:MM
+        const formattedTime = `${String(targetHour).padStart(2, '0')}:${String(targetMin).padStart(2, '0')}`;
+
+        // Задаем минимальную дату (чтобы нельзя было забронировать прошедшие дни)
+        document.getElementById('booking-date').min = formattedDate;
+
+        // Подставляем вычисленные значения в интерфейс
+        document.getElementById('booking-date').value = formattedDate;
+        
+        const timeSelect = document.getElementById('booking-time');
+        timeSelect.value = formattedTime;
+
+        // Если вдруг время округлилось до значения, которого нет в select, ставим первое доступное (11:00)
+        if (timeSelect.value !== formattedTime) {
+            timeSelect.value = "11:00";
+        }
+
+        // Разблокируем карту и грузим столы
+        checkBookingParams();
+    }
 
     function checkBookingParams() {
         const date = document.getElementById('booking-date').value;
@@ -451,6 +507,9 @@
             btn.style.opacity = '1';
         }
     });
+
+    // Запускаем автоопределение даты и времени при загрузке страницы
+    window.addEventListener('DOMContentLoaded', initDateTime);
 </script>
 
 </body>

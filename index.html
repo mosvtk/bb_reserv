@@ -61,6 +61,7 @@
 
         .input-group {
             flex: 1;
+            min-width: 0; /* Фикс для Safari: предотвращает растягивание флекс-элементов */
         }
 
         .input-group label {
@@ -100,6 +101,22 @@
         input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1); /* Делает иконку календаря белой на темном фоне */
             cursor: pointer;
+        }
+
+        /* Фикс для корректного отображения поля даты на iOS (убираем дефолтные стили Safari) */
+        input[type="date"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Фикс выравнивания текста внутри инпута даты для Safari на iOS */
+        input[type="date"]::-webkit-date-and-time-value {
+            min-height: 1.5em;
+            text-align: left;
         }
 
         input:focus, select:focus {
@@ -227,6 +244,11 @@
             .datetime-picker {
                 flex-direction: column;
                 gap: 12px;
+            }
+            .input-group {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
             }
             .booking-form div {
                 flex-direction: column;
@@ -390,8 +412,10 @@
     }
 
     function checkBookingParams() {
-        const date = document.getElementById('booking-date').value;
-        const time = document.getElementById('booking-time').value;
+        const dateInput = document.getElementById('booking-date');
+        const date = dateInput.value;
+        const timeSelect = document.getElementById('booking-time');
+        const time = timeSelect.value;
         const map = document.getElementById('hall-map');
 
         // Сбрасываем выбранный стол
@@ -406,7 +430,38 @@
             t.style.opacity = '1';
         });
 
-        if (date && time) {
+        if (!date) {
+            map.classList.add('locked');
+            return;
+        }
+
+        // 1. ВАЛИДАЦИЯ ДАТЫ: Не разрешаем выбирать прошедшие дни
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        if (date < todayStr) {
+            alert('Нельзя выбрать прошедшую дату!');
+            // Сбрасываем дату на минимально разрешенную правилами инициализации
+            dateInput.value = dateInput.min || todayStr;
+            checkBookingParams();
+            return;
+        }
+
+        if (time) {
+            // 2. ВАЛИДАЦИЯ ВРЕМЕНИ: Если дата сегодня, запрещаем выбирать прошедшие часы/минуты
+            if (date === todayStr) {
+                const [selectHour, selectMin] = time.split(':').map(Number);
+                const currentHour = now.getHours();
+                const currentMin = now.getMinutes();
+                
+                if (selectHour < currentHour || (selectHour === currentHour && selectMin < currentMin)) {
+                    alert('Выбранное время уже прошло! Пожалуйста, выберите более позднее время.');
+                    timeSelect.value = ''; // Сбрасываем выбранное время
+                    map.classList.add('locked');
+                    return;
+                }
+            }
+
             map.classList.remove('locked');
             loadOccupiedTables(date, time);
         } else {
@@ -449,6 +504,34 @@
         table.addEventListener('click', function() {
             if (this.classList.contains('occupied')) return;
 
+            // СВЕРХНАДЁЖНАЯ ПРОВЕРКА ДАТЫ/ВРЕМЕНИ ПРИ КЛИКЕ НА СТОЛ
+            const dateInput = document.getElementById('booking-date');
+            const date = dateInput.value;
+            const timeSelect = document.getElementById('booking-time');
+            const time = timeSelect.value;
+
+            if (!date || !time) {
+                alert('Пожалуйста, выберите дату и время.');
+                return;
+            }
+
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            
+            if (date < todayStr) {
+                alert('Выбранная дата уже прошла. Пожалуйста, измените дату.');
+                return;
+            }
+            if (date === todayStr) {
+                const [selectHour, selectMin] = time.split(':').map(Number);
+                if (selectHour < now.getHours() || (selectHour === now.getHours() && selectMin < now.getMinutes())) {
+                    alert('Выбранное время уже прошло. Пожалуйста, укажите актуальное время.');
+                    timeSelect.value = '';
+                    document.getElementById('hall-map').classList.add('locked');
+                    return;
+                }
+            }
+
             // Убираем прошлый выбор
             document.querySelectorAll('.table').forEach(t => t.classList.remove('selected'));
             
@@ -473,6 +556,23 @@
             alert('Пожалуйста, укажите дату и время.');
             return;
         }
+
+        // ЗАЩИТНАЯ ПРОВЕРКА ВРЕМЕНИ ПЕРЕД САМОЙ ОТПРАВКОЙ НА СЕРВЕР (на случай, если пользователь долго сидел на странице)
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        if (date < todayStr) {
+            alert('Нельзя забронировать на прошедшую дату!');
+            return;
+        }
+        if (date === todayStr) {
+            const [selectHour, selectMin] = time.split(':').map(Number);
+            if (selectHour < now.getHours() || (selectHour === now.getHours() && selectMin < now.getMinutes())) {
+                alert('Выбранное время уже прошло! Пожалуйста, выберите другое актуальное время.');
+                return;
+            }
+        }
+
         if (!selectedTable) {
             alert('Пожалуйста, выберите стол на схеме.');
             return;
